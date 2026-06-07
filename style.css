@@ -1,0 +1,84 @@
+/* ==========================================
+   1. GIAO DIỆN SÁNG (MẶC ĐỊNH)
+   ========================================== */
+.stApp {
+    background-color: #F0F8F8; /* Nền xanh nhạt y tế */
+}
+
+.main-title {
+    font-size: 38px;
+    font-weight: 700;
+    color: #00796B; /* Chữ Xanh mòng két đậm */
+    text-align: center;
+    padding-bottom: 5px;
+    letter-spacing: 1px;
+}
+
+.sub-title {
+    text-align: center;
+    color: #455A64;
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+/* Nút bấm */
+.stButton > button {
+    background-color: #FFF9C4; /* Vàng nhạt */
+    color: #004D40; 
+    margin: 10px 0;
+    padding: 12px 25px;
+    font-weight: bold;
+    border-radius: 8px;
+    border: 1px solid #FBC02D;
+    width: 100%;
+    transition: 0.3s ease-in-out;
+}
+
+.stButton > button:hover {
+    background-color: #FFF59D; 
+    color: #000000;
+    border-color: #F57F17;
+}
+
+img {
+    border-radius: 8px;
+    border: 1px solid #CFD8DC;
+}
+
+
+/* ==========================================
+   2. GIAO DIỆN TỐI (DARK MODE)
+   Tự động kích hoạt khi trình duyệt ở chế độ Dark Mode
+   ========================================== */
+@media (prefers-color-scheme: dark) {
+    
+    .stApp {
+        background-color: transparent !important; /* Để Streamlit tự lo màu nền đen mặc định */
+    }
+    
+    .main-title {
+        color: #80CBC4 !important; /* Đổi tiêu đề sang xanh ngọc sáng để nổi trên nền đen */
+    }
+    
+    .sub-title {
+        color: #B0BEC5 !important; /* Xám sáng */
+    }
+    
+    /* Nút bấm ở chế độ tối: Nền xám đen, chữ vàng, viền vàng */
+    .stButton > button {
+        background-color: #263238 !important; 
+        color: #FFF9C4 !important; 
+        border: 1px solid #80CBC4 !important; 
+    }
+    
+    .stButton > button:hover {
+        background-color: #37474F !important;
+        color: #FFFFFF !important;
+        border-color: #FFF9C4 !important;
+    }
+    
+    img {
+        border-color: #455A64 !important;
+        opacity: 0.9; /* Giảm độ chói của ảnh trắng khi xem trong ban đêm */
+    }
+}
