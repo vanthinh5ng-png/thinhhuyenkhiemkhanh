@@ -220,16 +220,57 @@ def doc_toa_thuoc_bang_ai(file_anh):
     client = OpenAI(api_key=api_key_an, base_url="https://api.sambanova.ai/v1")
     base64_image = encode_image(file_anh)
     
+    # PROMPT ĐƯỢC TỐI ƯU HÓA: Chi tiết, ép logic suy luận và phân loại giờ chuẩn xác
     loi_dan = """
-    Hệ thống của bạn bao gồm 2 mô-đun: OCR và NLP.
-    1. BƯỚC OCR: Đọc chính xác toàn bộ chữ viết tay/chữ in trong ảnh. Lưu vào "van_ban_goc_ocr".
-    2. BƯỚC NLP: Phân tích đoạn chữ đó để bóc tách: tên thuốc, liều dùng, số ngày uống, ghi chú.
-    
-    BẮT BUỘC - QUY TẮC TỰ ĐỘNG ĐIỀN GIỜ THEO BUỔI (Nếu đơn thuốc không ghi giờ cụ thể):
-    - SÁNG -> "08:00" | TRƯA -> "12:00" | CHIỀU -> "16:00" | TỐI -> "20:00"
-    
-    TRẢ VỀ DUY NHẤT ĐỊNH DẠNG JSON. Không dùng markdown như ```json. 
-    Trường "so_ngay_uong" bắt buộc là SỐ NGUYÊN.
+    Bạn là một Dược sĩ AI cấp cao và Chuyên gia trích xuất dữ liệu y khoa (OCR & NLP).
+    Nhiệm vụ của bạn là phân tích ảnh chụp đơn thuốc và trả về kết quả dưới định dạng JSON CHÍNH XÁC tuyệt đối.
+
+    BƯỚC 1: NHẬN DIỆN VĂN BẢN (OCR)
+    - Đọc cẩn thận toàn bộ văn bản trong ảnh (cả chữ in và chữ viết tay). 
+    - Nếu chữ viết tay khó đọc, hãy dựa vào ngữ cảnh y khoa (tên thuốc phổ biến, liều dùng đi kèm) để suy luận từ chính xác.
+    - Ghi lại toàn bộ những gì bạn đọc được vào trường "van_ban_goc_ocr".
+
+    BƯỚC 2: PHÂN TÍCH VÀ PHÂN LOẠI GIỜ UỐNG (NLP RẤT QUAN TRỌNG)
+    - Bóc tách danh sách thuốc vào mảng "danh_sach_thuoc".
+    - Với mỗi loại thuốc, xác định:
+      + "ten_thuoc": Tên thuốc (Ví dụ: Paracetamol 500mg).
+      + "lieu_luong": Lượng dùng mỗi lần (Ví dụ: 1 viên, 10ml...).
+      + "ghi_chu": Lời dặn (Ví dụ: Uống sau ăn, ngậm dưới lưỡi...).
+      
+      [QUY TẮC TÍNH TOÁN GIỜ UỐNG BẮT BUỘC]
+      + Xác định "cac_buoi_uong" dựa vào các ký hiệu viết tắt của bác sĩ:
+        * Ghi "S", "Sáng" -> ["Sáng"]
+        * Ghi "Tr", "Trưa" -> ["Trưa"]
+        * Ghi "C", "Chiều" -> ["Chiều"]
+        * Ghi "T", "Tối" -> ["Tối"]
+        * Ghi "Ngày 2 lần" -> ["Sáng", "Tối"]
+        * Ghi "Ngày 3 lần" -> ["Sáng", "Trưa", "Tối"]
+      + Tự động ánh xạ vào "gio_uong_goi_y" (Định dạng HH:MM) tương ứng:
+        * "Sáng" -> "08:00"
+        * "Trưa" -> "12:00"
+        * "Chiều" -> "16:00"
+        * "Tối" -> "20:00"
+
+    BƯỚC 3: XUẤT DỮ LIỆU ĐỊNH DẠNG JSON
+    - CHỈ trả về một chuỗi JSON duy nhất.
+    - KHÔNG bọc JSON bằng markdown (không dùng ```json và ```).
+    - KHÔNG thêm bất kỳ lời giải thích nào bên ngoài khối JSON.
+    - Trường "so_ngay_uong" BẮT BUỘC là số nguyên (Integer). Nếu không tìm thấy trong đơn, mặc định là 5.
+
+    CẤU TRÚC JSON MẪU MONG ĐỢI:
+    {
+      "van_ban_goc_ocr": "Nguyễn Văn A... 1. Panadol 500mg Sáng 1 viên, Tối 1 viên...",
+      "danh_sach_thuoc": [
+        {
+          "ten_thuoc": "Panadol 500mg",
+          "lieu_luong": "1 viên/lần",
+          "cac_buoi_uong": ["Sáng", "Tối"],
+          "gio_uong_goi_y": ["08:00", "20:00"],
+          "ghi_chu": "Uống sau ăn"
+        }
+      ],
+      "so_ngay_uong": 5
+    }
     """
 
     thoi_gian_cho = 4  
@@ -243,12 +284,14 @@ def doc_toa_thuoc_bang_ai(file_anh):
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                     ]}
                 ],
-                temperature=0.1
+                temperature=0.1 # Giữ temperature thấp để JSON ổn định, không bịa chế dữ liệu
             )
             
             ket_qua = response.choices[0].message.content
+            # Dọn dẹp chuỗi trả về để tránh lỗi parse JSON
             ket_qua_sach = ket_qua.replace("```json", "").replace("```", "").strip()
             
+            # Quét tìm khối JSON hợp lệ trong chuỗi trả về
             match = re.search(r'\{.*\}', ket_qua_sach, re.DOTALL)
             if match:
                 chuoi_json_sach = match.group(0)
